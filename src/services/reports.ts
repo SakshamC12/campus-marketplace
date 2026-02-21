@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import type { Report } from '../types';
 
 export const reportService = {
   // Create a report

@@ -157,7 +157,7 @@ export const authService = {
 
   // Set up auth state listener
   onAuthStateChange(callback: (user: AuthUser | null) => void) {
-    const unsubscribe = supabase.auth.onAuthStateChange(async (event, session) => {
+    const unsubscribe = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         callback({
           id: session.user.id,

@@ -141,7 +141,7 @@ export const listingService = {
   async uploadListingImage(listingId: string, file: File) {
     const fileName = `${listingId}/${Date.now()}_${file.name}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('listing-images')
       .upload(fileName, file);
 

@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import type { Favorite } from '../types';
 
 export const favoriteService = {
   // Add to favorites
