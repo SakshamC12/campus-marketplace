@@ -1,0 +1,238 @@
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useListing } from '../hooks/useListings';
+import { useAuthContext } from '../contexts/AuthContext';
+import { useAlert } from '../contexts/AlertContext';
+import { reportService } from '../services/reports';
+import { favoriteService } from '../services/favorites';
+import { ChatUI } from '../components/chat/ChatUI';
+import '../components/styles/listings.css';
+
+export const ListingDetailPage: React.FC = () => {
+  const { id: listingId } = useParams<{ id: string }>();
+  const { listing, loading, error } = useListing(listingId || '');
+  const { user } = useAuthContext();
+  const { addAlert } = useAlert();
+  const navigate = useNavigate();
+  const [showChat, setShowChat] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [submittingReport, setSubmittingReport] = useState(false);
+
+  React.useEffect(() => {
+    if (listingId && user) {
+      favoriteService.isFavorited(user.id, listingId).then(setIsFavorited);
+    }
+  }, [listingId, user]);
+
+  if (loading) {
+    return <div style={{ padding: '20px' }}>Loading listing...</div>;
+  }
+
+  if (error || !listing) {
+    return <div style={{ padding: '20px', color: 'red' }}>Failed to load listing</div>;
+  }
+
+  const isOwner = user?.id === listing.user_id;
+
+  const handleReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !reportReason) {
+      addAlert('Please fill in all fields', 'error');
+      return;
+    }
+
+    setSubmittingReport(true);
+    try {
+      await reportService.createReport(
+        listingId || '',
+        user.id,
+        reportReason,
+        reportDescription
+      );
+      addAlert('Report submitted successfully', 'success');
+      setShowReportForm(false);
+      setReportReason('');
+      setReportDescription('');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to submit report';
+      addAlert(message, 'error');
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!user) return;
+
+    try {
+      if (isFavorited) {
+        await favoriteService.removeFavorite(user.id, listingId || '');
+        setIsFavorited(false);
+        addAlert('Removed from favorites', 'success');
+      } else {
+        await favoriteService.addFavorite(user.id, listingId || '');
+        setIsFavorited(true);
+        addAlert('Added to favorites', 'success');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update favorite';
+      addAlert(message, 'error');
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+      <button onClick={() => navigate('/')} style={{ marginBottom: '20px' }}>
+        ← Back to Listings
+      </button>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+        <div>
+          {listing.image_url && (
+            <img
+              src={listing.image_url}
+              alt={listing.title}
+              style={{
+                width: '100%',
+                borderRadius: '8px',
+                marginBottom: '20px',
+              }}
+            />
+          )}
+        </div>
+
+        <div>
+          <h1>{listing.title}</h1>
+          <p style={{ fontSize: '14px', color: '#999' }}>{listing.category}</p>
+          <h2 style={{ color: '#667eea', marginBottom: '20px' }}>₹{listing.price}</h2>
+
+          <div style={{ marginBottom: '20px' }}>
+            <p>
+              <strong>Status:</strong>{' '}
+              <span className={`status-badge status-${listing.status}`}>
+                {listing.status}
+              </span>
+            </p>
+            <p>
+              <strong>Location:</strong> {listing.rendezvous_location || 'Not specified'}
+            </p>
+            {listing.user && (
+              <p>
+                <strong>Seller:</strong> {listing.user.full_name}
+              </p>
+            )}
+          </div>
+
+          <p style={{ marginBottom: '20px' }}>{listing.description}</p>
+
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            {!isOwner && (
+              <>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setShowChat(!showChat)}
+                >
+                  {showChat ? 'Hide Chat' : 'Contact Seller'}
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleToggleFavorite}
+                >
+                  {isFavorited ? '❤️ Favorited' : '🤍 Add to Favorites'}
+                </button>
+              </>
+            )}
+
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowReportForm(!showReportForm)}
+            >
+              {showReportForm ? 'Cancel Report' : '🚩 Report'}
+            </button>
+          </div>
+
+          {showReportForm && (
+            <form
+              onSubmit={handleReport}
+              style={{
+                padding: '20px',
+                backgroundColor: '#f9f9f9',
+                borderRadius: '8px',
+                marginBottom: '20px',
+              }}
+            >
+              <div style={{ marginBottom: '15px' }}>
+                <label htmlFor="reason">
+                  <strong>Report Reason</strong>
+                </label>
+                <select
+                  id="reason"
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    marginTop: '5px',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                  }}
+                >
+                  <option value="">Select a reason</option>
+                  <option value="inappropriate_content">Inappropriate Content</option>
+                  <option value="fake_listing">Fake Listing</option>
+                  <option value="spam">Spam</option>
+                  <option value="scam">Scam/Fraud</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '15px' }}>
+                <label htmlFor="description">
+                  <strong>Description (Optional)</strong>
+                </label>
+                <textarea
+                  id="description"
+                  value={reportDescription}
+                  onChange={(e) => setReportDescription(e.target.value)}
+                  placeholder="Provide additional details..."
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    marginTop: '5px',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={submittingReport}
+              >
+                {submittingReport ? 'Submitting...' : 'Submit Report'}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+
+      {showChat && !isOwner && listing.user && (
+        <div style={{ marginTop: '40px' }}>
+          <ChatUI
+            listingId={listingId || ''}
+            currentUserId={user?.id || ''}
+            otherUserId={listing.user_id}
+            otherUserName={listing.user.full_name}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
