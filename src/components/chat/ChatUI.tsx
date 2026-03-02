@@ -36,10 +36,13 @@ export const ChatUI: React.FC<ChatUIProps> = ({
     }
   }, [listingId, otherUserId, currentUserId, addAlert]);
 
+  // Load messages once on mount or when conversation changes
   useEffect(() => {
     loadMessages();
+  }, [listingId, otherUserId, currentUserId, loadMessages]);
 
-    // Subscribe to real-time messages
+  // Subscribe to real-time messages
+  useEffect(() => {
     const subscription = chatService.subscribeToMessages(
       listingId,
       currentUserId,
@@ -54,18 +57,12 @@ export const ChatUI: React.FC<ChatUIProps> = ({
       }
     );
 
-    // Polling fallback - reload messages every 5 seconds
-    const pollInterval = setInterval(() => {
-      loadMessages();
-    }, 5000);
-
     return () => {
       subscription.unsubscribe().catch(() => {
         // Ignore errors on unsubscribe
       });
-      clearInterval(pollInterval);
     };
-  }, [listingId, currentUserId, otherUserId, loadMessages]);
+  }, [listingId, currentUserId, otherUserId]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

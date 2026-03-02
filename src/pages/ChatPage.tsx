@@ -203,9 +203,10 @@ const DirectMessageChat: React.FC<{
     }
   }, [otherUserId, currentUserId]);
 
+  // Load messages once on component mount or when conversation changes
   useEffect(() => {
     loadMessages();
-  }, [loadMessages]);
+  }, [otherUserId, currentUserId]);
 
   // Subscribe to real-time direct messages
   useEffect(() => {
@@ -225,18 +226,12 @@ const DirectMessageChat: React.FC<{
       }
     );
 
-    // Polling fallback - reload messages every 5 seconds
-    const pollInterval = setInterval(() => {
-      loadMessages();
-    }, 5000);
-
     return () => {
       subscription.unsubscribe().catch(() => {
         // Ignore errors on unsubscribe
       });
-      clearInterval(pollInterval);
     };
-  }, [currentUserId, otherUserId, loadMessages]);
+  }, [currentUserId, otherUserId]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -349,9 +344,10 @@ const ListingMessageChat: React.FC<{
     }
   }, [listingId, otherUserId, currentUserId]);
 
+  // Load messages once on component mount or when conversation changes
   useEffect(() => {
     loadMessages();
-  }, [loadMessages]);
+  }, [listingId, otherUserId, currentUserId]);
 
   // Subscribe to real-time listing messages
   useEffect(() => {
@@ -372,18 +368,12 @@ const ListingMessageChat: React.FC<{
       }
     );
 
-    // Polling fallback - reload messages every 5 seconds
-    const pollInterval = setInterval(() => {
-      loadMessages();
-    }, 5000);
-
     return () => {
       subscription.unsubscribe().catch(() => {
         // Ignore errors on unsubscribe
       });
-      clearInterval(pollInterval);
     };
-  }, [listingId, currentUserId, otherUserId, loadMessages]);
+  }, [listingId, currentUserId, otherUserId]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
