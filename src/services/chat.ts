@@ -175,7 +175,7 @@ export const chatService = {
     return Array.from(conversations.values());
   },
 
-  // Subscribe to real-time messages
+  // Subscribe to listing-based messages
   subscribeToMessages(
     listingId: string,
     currentUserId: string,
@@ -191,6 +191,37 @@ export const chatService = {
           schema: 'public',
           table: 'chat_messages',
           filter: `listing_id=eq.${listingId}`,
+        },
+        (payload: any) => {
+          const message = payload.new as ChatMessage;
+          if (
+            (message.sender_id === currentUserId && message.receiver_id === otherUserId) ||
+            (message.sender_id === otherUserId && message.receiver_id === currentUserId)
+          ) {
+            callback(message);
+          }
+        }
+      )
+      .subscribe();
+
+    return subscription;
+  },
+
+  // Subscribe to direct messages (no listing)
+  subscribeToDirectMessages(
+    currentUserId: string,
+    otherUserId: string,
+    callback: (message: ChatMessage) => void
+  ) {
+    const subscription = supabase
+      .channel(`direct:${currentUserId}:${otherUserId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `listing_id=is.null`,
         },
         (payload: any) => {
           const message = payload.new as ChatMessage;

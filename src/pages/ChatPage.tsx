@@ -207,6 +207,21 @@ const DirectMessageChat: React.FC<{
     loadMessages();
   }, [loadMessages]);
 
+  // Subscribe to real-time direct messages
+  useEffect(() => {
+    const subscription = chatService.subscribeToDirectMessages(
+      currentUserId,
+      otherUserId,
+      (newMsg: ChatMessage) => {
+        setMessages((prev) => [...prev, newMsg]);
+      }
+    );
+
+    return () => {
+      chatService.unsubscribeFromMessages(subscription);
+    };
+  }, [currentUserId, otherUserId]);
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -214,7 +229,7 @@ const DirectMessageChat: React.FC<{
     try {
       await chatService.sendDirectMessage(currentUserId, otherUserId, newMessage);
       setNewMessage('');
-      await loadMessages();
+      // The subscription will handle displaying the new message in real-time
     } catch (error) {
       console.error('Failed to send message:', error);
     }
@@ -314,6 +329,22 @@ const ListingMessageChat: React.FC<{
     loadMessages();
   }, [loadMessages]);
 
+  // Subscribe to real-time listing messages
+  useEffect(() => {
+    const subscription = chatService.subscribeToMessages(
+      listingId,
+      currentUserId,
+      otherUserId,
+      (newMsg: ChatMessage) => {
+        setMessages((prev) => [...prev, newMsg]);
+      }
+    );
+
+    return () => {
+      chatService.unsubscribeFromMessages(subscription);
+    };
+  }, [listingId, currentUserId, otherUserId]);
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -321,7 +352,7 @@ const ListingMessageChat: React.FC<{
     try {
       await chatService.sendMessage(listingId, currentUserId, otherUserId, newMessage);
       setNewMessage('');
-      await loadMessages();
+      // The subscription will handle displaying the new message in real-time
     } catch (error) {
       console.error('Failed to send message:', error);
     }
