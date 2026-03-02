@@ -160,13 +160,17 @@ export const ChatPage: React.FC = () => {
               otherUserId={selectedConversation.userId}
               otherUserName={selectedConversation.userName}
             />
-          ) : (
+          ) : selectedConversation.listing ? (
             <ListingMessageChat
               listingId={selectedConversation.listing_id}
-              listingTitle={selectedConversation.listing.title}
+              listingTitle={selectedConversation.listing.title || 'Untitled Listing'}
               currentUserId={user.id}
               otherUserId={selectedConversation.otherUserId}
             />
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999' }}>
+              This listing has been deleted
+            </div>
           )
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999' }}>
