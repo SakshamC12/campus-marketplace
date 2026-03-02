@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { chatService } from '../../services/chat';
 import { useAlert } from '../../contexts/AlertContext';
 import type { ChatMessage } from '../../types';
@@ -22,21 +22,21 @@ export const ChatUI: React.FC<ChatUIProps> = ({
   const [loading, setLoading] = useState(true);
   const { addAlert } = useAlert();
 
-  useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        setLoading(true);
-        const msgs = await chatService.getMessages(listingId, otherUserId, currentUserId);
-        setMessages(msgs);
-        await chatService.markMessagesAsRead(listingId, currentUserId, otherUserId);
-      } catch (error) {
-        console.error('Failed to load messages:', error);
-        addAlert('Failed to load messages', 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadMessages = useCallback(async () => {
+    try {
+      setLoading(true);
+      const msgs = await chatService.getMessages(listingId, otherUserId, currentUserId);
+      setMessages(msgs);
+      await chatService.markMessagesAsRead(listingId, currentUserId, otherUserId);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+      addAlert('Failed to load messages', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [listingId, otherUserId, currentUserId, addAlert]);
 
+  useEffect(() => {
     loadMessages();
 
     // Subscribe to real-time messages
@@ -45,16 +45,27 @@ export const ChatUI: React.FC<ChatUIProps> = ({
       currentUserId,
       otherUserId,
       (message) => {
-        setMessages((prev) => [...prev, message]);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) {
+            return prev;
+          }
+          return [...prev, message];
+        });
       }
     );
+
+    // Polling fallback - reload messages every 5 seconds
+    const pollInterval = setInterval(() => {
+      loadMessages();
+    }, 5000);
 
     return () => {
       subscription.unsubscribe().catch(() => {
         // Ignore errors on unsubscribe
       });
+      clearInterval(pollInterval);
     };
-  }, [listingId, currentUserId, otherUserId]);
+  }, [listingId, currentUserId, otherUserId, loadMessages]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,12 +73,21 @@ export const ChatUI: React.FC<ChatUIProps> = ({
     if (!newMessage.trim()) return;
 
     try {
-      await chatService.sendMessage(
+      const sentMessage = await chatService.sendMessage(
         listingId,
         currentUserId,
         otherUserId,
         newMessage
       );
+      if (sentMessage) {
+        // Immediately add the message to the state
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === sentMessage.id)) {
+            return prev;
+          }
+          return [...prev, sentMessage];
+        });
+      }
       setNewMessage('');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to send message';

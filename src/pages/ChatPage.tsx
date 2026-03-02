@@ -209,10 +209,12 @@ const DirectMessageChat: React.FC<{
 
   // Subscribe to real-time direct messages
   useEffect(() => {
+    console.log('Setting up direct message subscription for', { currentUserId, otherUserId });
     const subscription = chatService.subscribeToDirectMessages(
       currentUserId,
       otherUserId,
       (newMsg: ChatMessage) => {
+        console.log('Received new direct message:', newMsg);
         setMessages((prev) => {
           // Avoid duplicates
           if (prev.some((m) => m.id === newMsg.id)) {
@@ -223,21 +225,35 @@ const DirectMessageChat: React.FC<{
       }
     );
 
+    // Polling fallback - reload messages every 5 seconds
+    const pollInterval = setInterval(() => {
+      loadMessages();
+    }, 5000);
+
     return () => {
       subscription.unsubscribe().catch(() => {
         // Ignore errors on unsubscribe
       });
+      clearInterval(pollInterval);
     };
-  }, [currentUserId, otherUserId]);
+  }, [currentUserId, otherUserId, loadMessages]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
     try {
-      await chatService.sendDirectMessage(currentUserId, otherUserId, newMessage);
+      const sentMessage = await chatService.sendDirectMessage(currentUserId, otherUserId, newMessage);
+      if (sentMessage) {
+        // Immediately add the message to the state
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === sentMessage.id)) {
+            return prev;
+          }
+          return [...prev, sentMessage];
+        });
+      }
       setNewMessage('');
-      // The subscription will handle displaying the new message in real-time
     } catch (error) {
       console.error('Failed to send message:', error);
     }
@@ -339,11 +355,13 @@ const ListingMessageChat: React.FC<{
 
   // Subscribe to real-time listing messages
   useEffect(() => {
+    console.log('Setting up listing message subscription for', { listingId, currentUserId, otherUserId });
     const subscription = chatService.subscribeToMessages(
       listingId,
       currentUserId,
       otherUserId,
       (newMsg: ChatMessage) => {
+        console.log('Received new listing message:', newMsg);
         setMessages((prev) => {
           // Avoid duplicates
           if (prev.some((m) => m.id === newMsg.id)) {
@@ -354,21 +372,35 @@ const ListingMessageChat: React.FC<{
       }
     );
 
+    // Polling fallback - reload messages every 5 seconds
+    const pollInterval = setInterval(() => {
+      loadMessages();
+    }, 5000);
+
     return () => {
       subscription.unsubscribe().catch(() => {
         // Ignore errors on unsubscribe
       });
+      clearInterval(pollInterval);
     };
-  }, [listingId, currentUserId, otherUserId]);
+  }, [listingId, currentUserId, otherUserId, loadMessages]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
     try {
-      await chatService.sendMessage(listingId, currentUserId, otherUserId, newMessage);
+      const sentMessage = await chatService.sendMessage(listingId, currentUserId, otherUserId, newMessage);
+      if (sentMessage) {
+        // Immediately add the message to the state
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === sentMessage.id)) {
+            return prev;
+          }
+          return [...prev, sentMessage];
+        });
+      }
       setNewMessage('');
-      // The subscription will handle displaying the new message in real-time
     } catch (error) {
       console.error('Failed to send message:', error);
     }
