@@ -37,7 +37,7 @@ export const HomePage: React.FC = () => {
 
   return (
     <div>
-      <h1>Browse Campus Marketplace</h1>
+      <h1>Browse SRMarketplace</h1>
 
       <div className="search-filter-container">
         <form className="search-filter-form">

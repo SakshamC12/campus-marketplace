@@ -28,7 +28,7 @@ const AppContent: React.FC = () => {
       <header className="app-header">
         <nav className="header-nav">
           <Link to="/" className="header-logo">
-            📚 Campus Marketplace
+            📚 SRMarketplace
           </Link>
 
           <div style={{ flex: 1 }} />

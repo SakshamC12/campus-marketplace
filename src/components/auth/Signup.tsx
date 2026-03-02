@@ -49,7 +49,7 @@ export const Signup: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>Campus Marketplace</h1>
+        <h1>SRMarketplace</h1>
         <h2>Sign Up</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">

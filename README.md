@@ -1,4 +1,4 @@
-# Campus Marketplace - Full Stack Application
+# SRMarketplace - Full Stack Application
 
 A modern web application for SRM IST students to buy, sell, and exchange items on campus.
 

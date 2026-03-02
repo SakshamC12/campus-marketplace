@@ -1,4 +1,4 @@
-# Campus Marketplace - Implementation Checklist
+# SRMarketplace - Implementation Checklist
 
 ## Pre-Implementation ✓
 
@@ -258,4 +258,4 @@ The application is fully scaffolded and ready for you to:
 3. Run the development server
 4. Start testing!
 
-**Good luck with your Campus Marketplace! 🚀📚**
+**Good luck with your SRMarketplace! 🚀📚**

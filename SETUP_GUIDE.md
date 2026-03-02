@@ -1,6 +1,6 @@
-## Campus Marketplace - Complete Setup Guide
+## SRMarketplace - Complete Setup Guide
 
-This guide will walk you through setting up the Campus Marketplace application from start to finish.
+This guide will walk you through setting up the SRMarketplace application from start to finish.
 
 ## Step 1: Verify Project Structure
 
@@ -48,7 +48,7 @@ c:\sepm\
 ### 2.2 Create New Project
 1. Click "New Project"
 2. Fill in:
-   - **Name**: Campus Marketplace
+   - **Name**: SRMarketplace
    - **Database Password**: Strong password (save this!)
    - **Region**: Select region closest to India (e.g., Singapore)
 3. Click "Create new project"

@@ -1,7 +1,23 @@
 import { supabase } from './supabase';
-import type { ChatMessage } from '../types';
+import type { ChatMessage, User } from '../types';
 
 export const chatService = {
+  // Get all users for direct messaging
+  async getAllUsers(currentUserId: string): Promise<User[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .neq('id', currentUserId)
+      .order('full_name', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching users:', error);
+      return [];
+    }
+
+    return data || [];
+  },
+
   // Get messages for a listing between two users
   async getMessages(listingId: string, otherUserId: string, currentUserId: string) {
     const { data, error } = await supabase
@@ -27,6 +43,31 @@ export const chatService = {
     return data || [];
   },
 
+  // Get direct messages between two users (no listing)
+  async getDirectMessages(otherUserId: string, currentUserId: string) {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select(
+        `
+        *,
+        sender:users!sender_id(id, full_name, profile_image_url),
+        receiver:users!receiver_id(id, full_name, profile_image_url)
+      `
+      )
+      .is('listing_id', null)
+      .or(
+        `and(sender_id.eq.${currentUserId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${currentUserId})`
+      )
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching direct messages:', error);
+      return [];
+    }
+
+    return data || [];
+  },
+
   // Send message
   async sendMessage(
     listingId: string,
@@ -39,6 +80,32 @@ export const chatService = {
       .insert([
         {
           listing_id: listingId,
+          sender_id: senderId,
+          receiver_id: receiverId,
+          message_text: messageText,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  },
+
+  // Send direct message (no listing required)
+  async sendDirectMessage(
+    senderId: string,
+    receiverId: string,
+    messageText: string
+  ) {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .insert([
+        {
+          listing_id: null,
           sender_id: senderId,
           receiver_id: receiverId,
           message_text: messageText,
