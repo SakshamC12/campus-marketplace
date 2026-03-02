@@ -142,7 +142,7 @@ export const ChatPage: React.FC = () => {
                     }}
                   >
                     <strong>
-                      {conv.type === 'direct' ? conv.userName : conv.listing.title}
+                      {conv.type === 'direct' ? conv.userName : conv.listing?.title || 'Listing (deleted)'}
                     </strong>
                   </div>
                 ))}
