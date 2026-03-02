@@ -182,21 +182,23 @@ export const chatService = {
     otherUserId: string,
     callback: (message: ChatMessage) => void
   ) {
-    const subscription = supabase
-      .channel(`messages:${listingId}:${currentUserId}:${otherUserId}`)
+    const channel = supabase
+      .channel(`messages-${listingId}-${currentUserId}-${otherUserId}`, {
+        config: { broadcast: { self: true } },
+      })
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
-          filter: `listing_id=eq.${listingId}`,
         },
         (payload: any) => {
           const message = payload.new as ChatMessage;
           if (
-            (message.sender_id === currentUserId && message.receiver_id === otherUserId) ||
-            (message.sender_id === otherUserId && message.receiver_id === currentUserId)
+            message.listing_id === listingId &&
+            ((message.sender_id === currentUserId && message.receiver_id === otherUserId) ||
+              (message.sender_id === otherUserId && message.receiver_id === currentUserId))
           ) {
             callback(message);
           }
@@ -204,7 +206,7 @@ export const chatService = {
       )
       .subscribe();
 
-    return subscription;
+    return channel;
   },
 
   // Subscribe to direct messages (no listing)
@@ -213,21 +215,23 @@ export const chatService = {
     otherUserId: string,
     callback: (message: ChatMessage) => void
   ) {
-    const subscription = supabase
-      .channel(`direct:${currentUserId}:${otherUserId}`)
+    const channel = supabase
+      .channel(`direct-${currentUserId}-${otherUserId}`, {
+        config: { broadcast: { self: true } },
+      })
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
-          filter: `listing_id=is.null`,
         },
         (payload: any) => {
           const message = payload.new as ChatMessage;
           if (
-            (message.sender_id === currentUserId && message.receiver_id === otherUserId) ||
-            (message.sender_id === otherUserId && message.receiver_id === currentUserId)
+            message.listing_id === null &&
+            ((message.sender_id === currentUserId && message.receiver_id === otherUserId) ||
+              (message.sender_id === otherUserId && message.receiver_id === currentUserId))
           ) {
             callback(message);
           }
@@ -235,11 +239,6 @@ export const chatService = {
       )
       .subscribe();
 
-    return subscription;
-  },
-
-  // Unsubscribe from messages
-  async unsubscribeFromMessages(channel: any) {
-    await supabase.removeChannel(channel);
+    return channel;
   },
 };

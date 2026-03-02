@@ -50,7 +50,9 @@ export const ChatUI: React.FC<ChatUIProps> = ({
     );
 
     return () => {
-      chatService.unsubscribeFromMessages(subscription);
+      subscription.unsubscribe().catch(() => {
+        // Ignore errors on unsubscribe
+      });
     };
   }, [listingId, currentUserId, otherUserId]);
 

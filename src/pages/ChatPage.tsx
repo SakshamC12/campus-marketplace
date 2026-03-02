@@ -213,12 +213,20 @@ const DirectMessageChat: React.FC<{
       currentUserId,
       otherUserId,
       (newMsg: ChatMessage) => {
-        setMessages((prev) => [...prev, newMsg]);
+        setMessages((prev) => {
+          // Avoid duplicates
+          if (prev.some((m) => m.id === newMsg.id)) {
+            return prev;
+          }
+          return [...prev, newMsg];
+        });
       }
     );
 
     return () => {
-      chatService.unsubscribeFromMessages(subscription);
+      subscription.unsubscribe().catch(() => {
+        // Ignore errors on unsubscribe
+      });
     };
   }, [currentUserId, otherUserId]);
 
@@ -336,12 +344,20 @@ const ListingMessageChat: React.FC<{
       currentUserId,
       otherUserId,
       (newMsg: ChatMessage) => {
-        setMessages((prev) => [...prev, newMsg]);
+        setMessages((prev) => {
+          // Avoid duplicates
+          if (prev.some((m) => m.id === newMsg.id)) {
+            return prev;
+          }
+          return [...prev, newMsg];
+        });
       }
     );
 
     return () => {
-      chatService.unsubscribeFromMessages(subscription);
+      subscription.unsubscribe().catch(() => {
+        // Ignore errors on unsubscribe
+      });
     };
   }, [listingId, currentUserId, otherUserId]);
 
