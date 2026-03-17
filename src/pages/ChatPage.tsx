@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthContext } from '../contexts/AuthContext.tsx';
 import { chatService } from '../services/chat.ts';
 import type { User, ChatMessage } from '../types/index.ts';
@@ -69,103 +69,127 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '20px', height: '100vh' }}>
-      <div style={{ background: 'white', borderRadius: '8px', padding: '20px', overflowY: 'auto' }}>
-        <h2>Messages</h2>
-        
-        <button
-          type="button"
-          onClick={() => setShowUsersList(!showUsersList)}
-          style={{
-            width: '100%',
-            padding: '10px',
-            marginBottom: '15px',
-            background: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
-        >
-          {showUsersList ? 'View Conversations' : 'Message Users'}
-        </button>
+    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '0', height: '100vh', background: '#f5f5f5' }}>
+      {/* Sidebar - Conversations & Users */}
+      <div style={{ 
+        background: 'white', 
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        borderRight: '1px solid #e0e0e0'
+      }}>
+        <div style={{ padding: '20px', borderBottom: '1px solid #e0e0e0' }}>
+          <h2 style={{ margin: '0 0 15px 0', fontSize: '20px' }}>Messages</h2>
+          <button
+            type="button"
+            onClick={() => setShowUsersList(!showUsersList)}
+            style={{
+              width: '100%',
+              padding: '10px',
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            {showUsersList ? 'View Conversations' : 'Message Users'}
+          </button>
+        </div>
 
-        {showUsersList ? (
-          <div>
-            <h3 style={{ fontSize: '14px', marginBottom: '10px' }}>All Users</h3>
-            {loading ? (
-              <p>Loading users...</p>
-            ) : allUsers.length === 0 ? (
-              <p style={{ color: '#999' }}>No users available</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {allUsers.map((u) => (
-                  <div
-                    key={u.id}
-                    onClick={() => handleSelectUser(u)}
-                    style={{
-                      padding: '10px',
-                      background: '#f5f5f5',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      borderLeft: selectedConversation?.type === 'direct' && selectedConversation?.userId === u.id ? '3px solid #007bff' : '3px solid transparent',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    <strong>{u.full_name || 'Unknown User'}</strong>
-                    <div style={{ fontSize: '12px', color: '#999' }}>{u.email}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div>
-            <h3 style={{ fontSize: '14px', marginBottom: '10px' }}>Conversations</h3>
-            {loading ? (
-              <p>Loading conversations...</p>
-            ) : conversations.length === 0 ? (
-              <p style={{ color: '#999' }}>No conversations yet</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {conversations.map((conv) => (
-                  <div
-                    key={conv.type === 'direct' ? conv.userId : conv.listing_id}
-                    onClick={() => setSelectedConversation(conv)}
-                    style={{
-                      padding: '10px',
-                      background: '#f5f5f5',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      borderLeft: selectedConversation === conv ? '3px solid #007bff' : '3px solid transparent',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    <strong>
-                      {conv.type === 'direct' ? conv.userName : conv.listing?.title || 'Listing (deleted)'}
-                    </strong>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Scrollable list */}
+        <div style={{ 
+          flex: 1, 
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          minHeight: '0'
+        }}>
+          {showUsersList ? (
+            <div style={{ padding: '12px' }}>
+              <h3 style={{ fontSize: '14px', marginBottom: '10px', marginTop: '0', color: '#666' }}>All Users</h3>
+              {loading ? (
+                <p style={{ color: '#999', fontSize: '14px' }}>Loading users...</p>
+              ) : allUsers.length === 0 ? (
+                <p style={{ color: '#999', fontSize: '14px' }}>No users available</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {allUsers.map((u) => (
+                    <div
+                      key={u.id}
+                      onClick={() => handleSelectUser(u)}
+                      style={{
+                        padding: '12px',
+                        background: selectedConversation?.type === 'direct' && (selectedConversation as DirectConversation)?.userId === u.id ? '#e3f2fd' : '#f9f9f9',
+                        borderLeft: selectedConversation?.type === 'direct' && (selectedConversation as DirectConversation)?.userId === u.id ? '3px solid #007bff' : '3px solid transparent',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <strong style={{ fontSize: '14px', display: 'block' }}>{u.full_name || 'Unknown User'}</strong>
+                      <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>{u.email}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ padding: '12px' }}>
+              <h3 style={{ fontSize: '14px', marginBottom: '10px', marginTop: '0', color: '#666' }}>Conversations</h3>
+              {loading ? (
+                <p style={{ color: '#999', fontSize: '14px' }}>Loading conversations...</p>
+              ) : conversations.length === 0 ? (
+                <p style={{ color: '#999', fontSize: '14px' }}>No conversations yet</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {conversations.map((conv) => (
+                    <div
+                      key={conv.type === 'direct' ? (conv as DirectConversation).userId : (conv as ListingConversation).listing_id}
+                      onClick={() => setSelectedConversation(conv)}
+                      style={{
+                        padding: '12px',
+                        background: selectedConversation === conv ? '#e3f2fd' : '#f9f9f9',
+                        borderLeft: selectedConversation === conv ? '3px solid #007bff' : '3px solid transparent',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <strong style={{ fontSize: '14px', display: 'block' }}>
+                        {conv.type === 'direct' ? (conv as DirectConversation).userName : (conv as ListingConversation).listing?.title || 'Listing'}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div style={{ background: 'white', borderRadius: '8px', padding: '20px' }}>
+      {/* Main Chat Area */}
+      <div style={{ 
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        background: 'white',
+        minHeight: '0'
+      }}>
         {selectedConversation && user ? (
           selectedConversation.type === 'direct' ? (
             <DirectMessageChat
               currentUserId={user.id}
-              otherUserId={selectedConversation.userId}
-              otherUserName={selectedConversation.userName}
+              otherUserId={(selectedConversation as DirectConversation).userId}
+              otherUserName={(selectedConversation as DirectConversation).userName}
             />
-          ) : selectedConversation.listing ? (
+          ) : (selectedConversation as ListingConversation).listing ? (
             <ListingMessageChat
-              listingId={selectedConversation.listing_id}
-              listingTitle={selectedConversation.listing.title || 'Untitled Listing'}
+              listingId={(selectedConversation as ListingConversation).listing_id}
+              listingTitle={(selectedConversation as ListingConversation).listing?.title || 'Untitled Listing'}
               currentUserId={user.id}
-              otherUserId={selectedConversation.otherUserId}
+              otherUserId={(selectedConversation as ListingConversation).otherUserId}
             />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999' }}>
@@ -190,6 +214,11 @@ const DirectMessageChat: React.FC<{
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
 
   const loadMessages = useCallback(async () => {
     try {
@@ -206,7 +235,12 @@ const DirectMessageChat: React.FC<{
   // Load messages once on component mount or when conversation changes
   useEffect(() => {
     loadMessages();
-  }, [otherUserId, currentUserId]);
+  }, [otherUserId, currentUserId, loadMessages]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   // Subscribe to real-time direct messages
   useEffect(() => {
@@ -254,55 +288,92 @@ const DirectMessageChat: React.FC<{
     }
   };
 
-  if (loading) {
-    return <div>Loading messages...</div>;
-  }
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '10px' }}>
-        <h3>{otherUserName || 'User'}</h3>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '0' }}>
+      {/* Header */}
+      <div style={{ 
+        borderBottom: '1px solid #eee', 
+        paddingBottom: '12px', 
+        marginBottom: '12px',
+        minHeight: '50px',
+        display: 'flex',
+        alignItems: 'center'
+      }}>
+        <h3 style={{ margin: 0, fontSize: '18px' }}>{otherUserName || 'User'}</h3>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', marginBottom: '20px' }}>
-        {messages.length === 0 ? (
-          <div style={{ color: '#999' }}>No messages yet</div>
+      {/* Messages Container */}
+      <div style={{ 
+        flex: 1,
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        minHeight: '0',
+        paddingRight: '8px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px'
+      }}>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#999' }}>
+            Loading messages...
+          </div>
+        ) : messages.length === 0 ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#999' }}>
+            No messages yet
+          </div>
         ) : (
           messages.map((msg) => (
             <div
               key={msg.id}
               style={{
-                marginBottom: '10px',
                 display: 'flex',
                 justifyContent: msg.sender_id === currentUserId ? 'flex-end' : 'flex-start',
+                marginBottom: '4px',
               }}
             >
               <div
                 style={{
-                  maxWidth: '60%',
-                  padding: '10px 15px',
+                  maxWidth: '70%',
+                  padding: '10px 14px',
                   background: msg.sender_id === currentUserId ? '#007bff' : '#e9ecef',
                   color: msg.sender_id === currentUserId ? 'white' : 'black',
-                  borderRadius: '8px',
+                  borderRadius: '12px',
+                  wordWrap: 'break-word',
                 }}
               >
-                <p style={{ margin: 0 }}>{msg.message_text}</p>
-                <small style={{ opacity: 0.7 }}>
-                  {new Date(msg.created_at).toLocaleTimeString()}
+                <p style={{ margin: '0 0 4px 0', fontSize: '14px' }}>{msg.message_text}</p>
+                <small style={{ opacity: 0.7, fontSize: '12px' }}>
+                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </small>
               </div>
             </div>
           ))
         )}
+        {/* Scroll anchor */}
+        <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '10px' }}>
+      {/* Message Input */}
+      <form onSubmit={handleSendMessage} style={{ 
+        display: 'flex', 
+        gap: '10px',
+        paddingTop: '12px',
+        borderTop: '1px solid #eee',
+        minHeight: '50px'
+      }}>
         <input
           type="text"
           value={newMessage}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewMessage(e.target.value)}
           placeholder="Type a message..."
-          style={{ flex: 1, padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+          style={{ 
+            flex: 1, 
+            padding: '10px', 
+            border: '1px solid #ddd', 
+            borderRadius: '4px',
+            fontSize: '14px',
+            fontFamily: 'inherit'
+          }}
         />
         <button
           type="submit"
@@ -313,6 +384,8 @@ const DirectMessageChat: React.FC<{
             border: 'none',
             borderRadius: '4px',
             cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '500'
           }}
         >
           Send
@@ -331,6 +404,11 @@ const ListingMessageChat: React.FC<{
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
 
   const loadMessages = useCallback(async () => {
     try {
@@ -347,7 +425,12 @@ const ListingMessageChat: React.FC<{
   // Load messages once on component mount or when conversation changes
   useEffect(() => {
     loadMessages();
-  }, [listingId, otherUserId, currentUserId]);
+  }, [listingId, otherUserId, currentUserId, loadMessages]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   // Subscribe to real-time listing messages
   useEffect(() => {
@@ -396,55 +479,92 @@ const ListingMessageChat: React.FC<{
     }
   };
 
-  if (loading) {
-    return <div>Loading messages...</div>;
-  }
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '10px' }}>
-        <h3>{listingTitle}</h3>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '0' }}>
+      {/* Header */}
+      <div style={{ 
+        borderBottom: '1px solid #eee', 
+        paddingBottom: '12px', 
+        marginBottom: '12px',
+        minHeight: '50px',
+        display: 'flex',
+        alignItems: 'center'
+      }}>
+        <h3 style={{ margin: 0, fontSize: '18px' }}>{listingTitle}</h3>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', marginBottom: '20px' }}>
-        {messages.length === 0 ? (
-          <div style={{ color: '#999' }}>No messages yet</div>
+      {/* Messages Container */}
+      <div style={{ 
+        flex: 1,
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        minHeight: '0',
+        paddingRight: '8px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px'
+      }}>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#999' }}>
+            Loading messages...
+          </div>
+        ) : messages.length === 0 ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#999' }}>
+            No messages yet
+          </div>
         ) : (
           messages.map((msg) => (
             <div
               key={msg.id}
               style={{
-                marginBottom: '10px',
                 display: 'flex',
                 justifyContent: msg.sender_id === currentUserId ? 'flex-end' : 'flex-start',
+                marginBottom: '4px',
               }}
             >
               <div
                 style={{
-                  maxWidth: '60%',
-                  padding: '10px 15px',
+                  maxWidth: '70%',
+                  padding: '10px 14px',
                   background: msg.sender_id === currentUserId ? '#007bff' : '#e9ecef',
                   color: msg.sender_id === currentUserId ? 'white' : 'black',
-                  borderRadius: '8px',
+                  borderRadius: '12px',
+                  wordWrap: 'break-word',
                 }}
               >
-                <p style={{ margin: 0 }}>{msg.message_text}</p>
-                <small style={{ opacity: 0.7 }}>
-                  {new Date(msg.created_at).toLocaleTimeString()}
+                <p style={{ margin: '0 0 4px 0', fontSize: '14px' }}>{msg.message_text}</p>
+                <small style={{ opacity: 0.7, fontSize: '12px' }}>
+                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </small>
               </div>
             </div>
           ))
         )}
+        {/* Scroll anchor */}
+        <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '10px' }}>
+      {/* Message Input */}
+      <form onSubmit={handleSendMessage} style={{ 
+        display: 'flex', 
+        gap: '10px',
+        paddingTop: '12px',
+        borderTop: '1px solid #eee',
+        minHeight: '50px'
+      }}>
         <input
           type="text"
           value={newMessage}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewMessage(e.target.value)}
           placeholder="Type a message..."
-          style={{ flex: 1, padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+          style={{ 
+            flex: 1, 
+            padding: '10px', 
+            border: '1px solid #ddd', 
+            borderRadius: '4px',
+            fontSize: '14px',
+            fontFamily: 'inherit'
+          }}
         />
         <button
           type="submit"
@@ -455,6 +575,8 @@ const ListingMessageChat: React.FC<{
             border: 'none',
             borderRadius: '4px',
             cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '500'
           }}
         >
           Send
