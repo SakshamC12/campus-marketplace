@@ -69,14 +69,15 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '0', height: '100vh', background: '#f5f5f5' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '0', height: '100vh', background: '#f5f5f5', overflow: 'hidden' }}>
       {/* Sidebar - Conversations & Users */}
       <div style={{ 
         background: 'white', 
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
-        borderRight: '1px solid #e0e0e0'
+        height: '100%',
+        borderRight: '1px solid #e0e0e0',
+        minHeight: '0'
       }}>
         <div style={{ padding: '20px', borderBottom: '1px solid #e0e0e0' }}>
           <h2 style={{ margin: '0 0 15px 0', fontSize: '20px' }}>Messages</h2>
@@ -173,9 +174,13 @@ export const ChatPage: React.FC = () => {
       <div style={{ 
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
+        height: '100%',
         background: 'white',
-        minHeight: '0'
+        minHeight: '0',
+        margin: '12px',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
       }}>
         {selectedConversation && user ? (
           selectedConversation.type === 'direct' ? (
@@ -292,14 +297,15 @@ const DirectMessageChat: React.FC<{
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '0' }}>
       {/* Header */}
       <div style={{ 
-        borderBottom: '1px solid #eee', 
-        paddingBottom: '12px', 
-        marginBottom: '12px',
+        background: '#007bff',
+        color: 'white',
+        padding: '16px 20px',
         minHeight: '50px',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        flexShrink: 0
       }}>
-        <h3 style={{ margin: 0, fontSize: '18px' }}>{otherUserName || 'User'}</h3>
+        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>{otherUserName || 'User'}</h3>
       </div>
 
       {/* Messages Container */}
@@ -308,7 +314,7 @@ const DirectMessageChat: React.FC<{
         overflowY: 'auto',
         overflowX: 'hidden',
         minHeight: '0',
-        paddingRight: '8px',
+        padding: '12px 16px 8px 16px',
         display: 'flex',
         flexDirection: 'column',
         gap: '8px'
@@ -357,9 +363,10 @@ const DirectMessageChat: React.FC<{
       <form onSubmit={handleSendMessage} style={{ 
         display: 'flex', 
         gap: '10px',
-        paddingTop: '12px',
+        padding: '12px 16px 16px 16px',
         borderTop: '1px solid #eee',
-        minHeight: '50px'
+        minHeight: 'auto',
+        flexShrink: 0
       }}>
         <input
           type="text"
@@ -368,11 +375,12 @@ const DirectMessageChat: React.FC<{
           placeholder="Type a message..."
           style={{ 
             flex: 1, 
-            padding: '10px', 
+            padding: '10px 12px', 
             border: '1px solid #ddd', 
             borderRadius: '4px',
             fontSize: '14px',
-            fontFamily: 'inherit'
+            fontFamily: 'inherit',
+            outline: 'none'
           }}
         />
         <button
@@ -385,7 +393,8 @@ const DirectMessageChat: React.FC<{
             borderRadius: '4px',
             cursor: 'pointer',
             fontSize: '14px',
-            fontWeight: '500'
+            fontWeight: '500',
+            flexShrink: 0
           }}
         >
           Send
@@ -483,14 +492,15 @@ const ListingMessageChat: React.FC<{
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '0' }}>
       {/* Header */}
       <div style={{ 
-        borderBottom: '1px solid #eee', 
-        paddingBottom: '12px', 
-        marginBottom: '12px',
+        background: '#007bff',
+        color: 'white',
+        padding: '16px 20px',
         minHeight: '50px',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        flexShrink: 0
       }}>
-        <h3 style={{ margin: 0, fontSize: '18px' }}>{listingTitle}</h3>
+        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>{listingTitle}</h3>
       </div>
 
       {/* Messages Container */}
@@ -499,7 +509,7 @@ const ListingMessageChat: React.FC<{
         overflowY: 'auto',
         overflowX: 'hidden',
         minHeight: '0',
-        paddingRight: '8px',
+        padding: '12px 16px 8px 16px',
         display: 'flex',
         flexDirection: 'column',
         gap: '8px'
@@ -548,9 +558,10 @@ const ListingMessageChat: React.FC<{
       <form onSubmit={handleSendMessage} style={{ 
         display: 'flex', 
         gap: '10px',
-        paddingTop: '12px',
+        padding: '12px 16px 16px 16px',
         borderTop: '1px solid #eee',
-        minHeight: '50px'
+        minHeight: 'auto',
+        flexShrink: 0
       }}>
         <input
           type="text"
@@ -559,11 +570,12 @@ const ListingMessageChat: React.FC<{
           placeholder="Type a message..."
           style={{ 
             flex: 1, 
-            padding: '10px', 
+            padding: '10px 12px', 
             border: '1px solid #ddd', 
             borderRadius: '4px',
             fontSize: '14px',
-            fontFamily: 'inherit'
+            fontFamily: 'inherit',
+            outline: 'none'
           }}
         />
         <button
@@ -576,7 +588,8 @@ const ListingMessageChat: React.FC<{
             borderRadius: '4px',
             cursor: 'pointer',
             fontSize: '14px',
-            fontWeight: '500'
+            fontWeight: '500',
+            flexShrink: 0
           }}
         >
           Send
