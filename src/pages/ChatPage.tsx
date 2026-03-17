@@ -69,7 +69,7 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '0', height: '100vh', background: '#f5f5f5', overflow: 'hidden' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '0', height: 'calc(100vh - 60px)', background: '#f5f5f5', overflow: 'hidden' }}>
       {/* Sidebar - Conversations & Users */}
       <div style={{ 
         background: 'white', 
