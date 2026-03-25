@@ -83,6 +83,9 @@ CREATE INDEX idx_reports_status ON reports(status);
 5. CHAT MESSAGES TABLE
 ========================================
 
+-- All messages are scoped to listings
+-- Conversations are uniquely identified by (listing_id, sender_id, receiver_id)
+-- Users can only message within the context of a specific listing
 CREATE TABLE chat_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   listing_id UUID NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
