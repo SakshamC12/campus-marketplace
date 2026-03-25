@@ -4,6 +4,9 @@ import type { ChatMessage } from '../types';
 /**
  * Chat service - All messages are scoped to listings
  * Conversations are uniquely identified by (listing_id, sender_id, receiver_id)
+ * 
+ * When a message is sent, a notification is automatically created for the receiver
+ * using a Supabase trigger (see DATABASE_SCHEMA.txt for trigger details)
  */
 export const chatService = {
   /**
@@ -70,9 +73,11 @@ export const chatService = {
 
   /**
    * Mark messages as read for a listing conversation
+   * Also marks related notifications as read
    */
   async markMessagesAsRead(listingId: string, currentUserId: string, otherUserId: string) {
-    const { error } = await supabase
+    // Mark messages as read
+    const { error: messageError } = await supabase
       .from('chat_messages')
       .update({ is_read: true })
       .eq('listing_id', listingId)
@@ -80,8 +85,17 @@ export const chatService = {
       .eq('receiver_id', currentUserId)
       .eq('is_read', false);
 
-    if (error) {
-      console.error('Error marking messages as read:', error);
+    if (messageError) {
+      console.error('Error marking messages as read:', messageError);
+    }
+
+    // Mark related notifications as read (done separately via notifications service)
+    // This is imported dynamically to avoid circular dependencies
+    try {
+      const { notificationService } = await import('./notifications');
+      await notificationService.markMessageNotificationsAsRead(currentUserId, listingId);
+    } catch (err) {
+      console.error('Error marking notifications as read:', err);
     }
   },
 

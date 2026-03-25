@@ -16,18 +16,40 @@ interface NotificationItemProps {
   notification: Notification;
   onMarkRead?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onClick?: () => void;
 }
 
 export const NotificationItem: React.FC<NotificationItemProps> = ({
   notification,
   onMarkRead,
   onDelete,
+  onClick,
 }) => {
+  // Extract listing and sender if included in the notification
+  const listing = (notification as any).listing as { id: string; title: string } | null;
+  const sender = (notification as any).sender as { id: string; full_name: string } | null;
+
   return (
-    <div className={`notification-item ${notification.is_read ? 'read' : 'unread'}`}>
+    <div 
+      className={`notification-item ${notification.is_read ? 'read' : 'unread'}`}
+      onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default', transition: 'background 0.2s' }}
+      onMouseEnter={(e) => onClick && (e.currentTarget.style.background = '#f0f0f0')}
+      onMouseLeave={(e) => onClick && (e.currentTarget.style.background = 'transparent')}
+    >
       <div className="notification-content">
         <h4>{notification.title}</h4>
         <p>{notification.message}</p>
+        {listing && (
+          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+            📄 Listing: <strong>{listing.title}</strong>
+          </div>
+        )}
+        {sender && (
+          <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+            👤 From: <strong>{sender.full_name}</strong>
+          </div>
+        )}
         <small>{new Date(notification.created_at).toLocaleString()}</small>
       </div>
 
@@ -35,7 +57,10 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
         {!notification.is_read && onMarkRead && (
           <button
             className="btn-icon"
-            onClick={() => onMarkRead(notification.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMarkRead(notification.id);
+            }}
             title="Mark as read"
           >
             ✓
@@ -44,7 +69,10 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
         {onDelete && (
           <button
             className="btn-icon delete"
-            onClick={() => onDelete(notification.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(notification.id);
+            }}
             title="Delete"
           >
             ✕

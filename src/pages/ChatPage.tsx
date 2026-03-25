@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuthContext } from '../contexts/AuthContext.tsx';
 import { chatService } from '../services/chat.ts';
 import type { ChatMessage } from '../types/index.ts';
@@ -14,6 +15,7 @@ interface ListingConversation {
 
 export const ChatPage: React.FC = () => {
   const { user } = useAuthContext();
+  const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState<ListingConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<ListingConversation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +38,23 @@ export const ChatPage: React.FC = () => {
       loadConversations();
     }
   }, [user, loadConversations]);
+
+  // Auto-select conversation based on URL params
+  useEffect(() => {
+    if (conversations.length > 0 && !loading) {
+      const userParam = searchParams.get('user');
+      const listingParam = searchParams.get('listing');
+      
+      if (userParam && listingParam) {
+        const matchingConversation = conversations.find(
+          conv => conv.otherUserId === userParam && conv.listing_id === listingParam
+        );
+        if (matchingConversation) {
+          setSelectedConversation(matchingConversation);
+        }
+      }
+    }
+  }, [conversations, loading, searchParams]);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '0', height: 'calc(100vh - 60px)', background: '#f5f5f5', overflow: 'hidden' }}>

@@ -2,11 +2,15 @@ import { supabase } from './supabase';
 import type { Notification } from '../types';
 
 export const notificationService = {
-  // Get user notifications
+  // Get user notifications with listing info
   async getNotifications(userId: string, unreadOnly = false) {
     let query = supabase
       .from('notifications')
-      .select('*')
+      .select(`
+        *,
+        listing:related_listing_id(id, title),
+        sender:related_user_id(id, full_name, email)
+      `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -33,6 +37,21 @@ export const notificationService = {
 
     if (error) {
       throw error;
+    }
+  },
+
+  // Mark related message notifications as read for a listing conversation
+  async markMessageNotificationsAsRead(userId: string, listingId: string) {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', userId)
+      .eq('related_listing_id', listingId)
+      .eq('type', 'message')
+      .eq('is_read', false);
+
+    if (error) {
+      console.error('Error marking message notifications as read:', error);
     }
   },
 
