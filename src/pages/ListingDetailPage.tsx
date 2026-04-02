@@ -5,6 +5,7 @@ import { useAuthContext } from '../contexts/AuthContext';
 import { useAlert } from '../contexts/AlertContext';
 import { reportService } from '../services/reports';
 import { favoriteService } from '../services/favorites';
+import { RENDEZVOUS_LOCATIONS } from '../services/listings';
 import { ChatUI } from '../components/chat/ChatUI';
 import '../components/styles/listings.css';
 
@@ -117,7 +118,23 @@ export const ListingDetailPage: React.FC = () => {
               </span>
             </p>
             <p>
-              <strong>Location:</strong> {listing.rendezvous_location || 'Not specified'}
+              <strong>Location:</strong>{' '}
+              {listing.rendezvous_location ? (
+                RENDEZVOUS_LOCATIONS[listing.rendezvous_location as keyof typeof RENDEZVOUS_LOCATIONS] ? (
+                  <a
+                    href={RENDEZVOUS_LOCATIONS[listing.rendezvous_location as keyof typeof RENDEZVOUS_LOCATIONS]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#667eea', textDecoration: 'underline', cursor: 'pointer' }}
+                  >
+                    {listing.rendezvous_location}
+                  </a>
+                ) : (
+                  listing.rendezvous_location
+                )
+              ) : (
+                'Not specified'
+              )}
             </p>
             {listing.user && (
               <p>

@@ -73,34 +73,41 @@ export const useNotifications = (userId: string | null) => {
 
   const markAsRead = async (notificationId: string) => {
     // Optimistic update - update local state immediately
+    const previousNotifications = notifications.slice();
     setNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
     );
 
     try {
       await notificationService.markNotificationAsRead(notificationId);
+      // Force refresh to ensure consistency with DB state
+      if (userId) {
+        const updatedData = await notificationService.getNotifications(userId);
+        setNotifications(updatedData);
+      }
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
       // Revert optimistic update on failure
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, is_read: false } : n))
-      );
+      setNotifications(previousNotifications);
     }
   };
 
   const markAllAsRead = async () => {
     if (!userId) return;
     
+    const previousNotifications = notifications.slice();
     // Optimistic update - update local state immediately
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
 
     try {
       await notificationService.markAllNotificationsAsRead(userId);
+      // Force refresh to ensure consistency with DB state
+      const updatedData = await notificationService.getNotifications(userId);
+      setNotifications(updatedData);
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err);
-      // Revert optimistic update on failure - fetch fresh data
-      const data = await notificationService.getNotifications(userId);
-      setNotifications(data);
+      // Revert optimistic update on failure
+      setNotifications(previousNotifications);
     }
   };
 

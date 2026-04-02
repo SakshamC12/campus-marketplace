@@ -1,6 +1,14 @@
 import { supabase } from './supabase';
 import type { Listing, ListingFilters, ListingImage } from '../types';
 
+export const RENDEZVOUS_LOCATIONS = {
+  'Arch Gate': 'https://maps.app.goo.gl/iRPoR2phEgMhNUwW7',
+  'Tech Park 1': 'https://maps.app.goo.gl/zasf7M9fjJbrJaiL9',
+  'Boys Hostel Gate 1': 'https://maps.app.goo.gl/4VaF9to8Q5hJaoF76',
+  'Slice of Life Cafe': 'https://maps.app.goo.gl/8wCYzn3E6g8PgfDUA',
+  'M Block Girls Hostel': 'https://maps.app.goo.gl/FwbyX86RazNoUQYBA',
+} as const;
+
 export const listingService = {
   // Get all listings with filters
   async getListings(filters?: ListingFilters) {
@@ -221,21 +229,8 @@ export const listingService = {
     ];
   },
 
-  // Get campus locations (mock data - can be expanded)
+  // Get campus locations (predefined rendezvous locations)
   getCampusLocations() {
-    return [
-      'Main Library',
-      'Cafeteria Block A',
-      'Cafeteria Block B',
-      'Auditorium',
-      'Sports Complex',
-      'Hostel A',
-      'Hostel B',
-      'Hostel C',
-      'Main Gate',
-      'IT Block',
-      'Science Block',
-      'Admin Block',
-    ];
+    return Object.keys(RENDEZVOUS_LOCATIONS);
   },
 };
