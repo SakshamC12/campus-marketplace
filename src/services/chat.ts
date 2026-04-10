@@ -152,6 +152,8 @@ export const chatService = {
     otherUserId: string,
     callback: (message: ChatMessage) => void
   ) {
+    console.log('[Chat] Creating realtime subscription for listing:', listingId, 'users:', currentUserId, otherUserId);
+    
     const channel = supabase
       .channel(`messages-${listingId}-${currentUserId}-${otherUserId}`, {
         config: { broadcast: { self: true } },
@@ -162,19 +164,52 @@ export const chatService = {
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
+          filter: `listing_id=eq.${listingId}`,
         },
-        (payload: any) => {
-          const message = payload.new as ChatMessage;
+        async (payload: any) => {
+          console.log('[Chat] Received INSERT event:', payload);
+          
+          const newMessage = payload.new;
           if (
-            message.listing_id === listingId &&
-            ((message.sender_id === currentUserId && message.receiver_id === otherUserId) ||
-              (message.sender_id === otherUserId && message.receiver_id === currentUserId))
+            newMessage.listing_id === listingId &&
+            ((newMessage.sender_id === currentUserId && newMessage.receiver_id === otherUserId) ||
+              (newMessage.sender_id === otherUserId && newMessage.receiver_id === currentUserId))
           ) {
-            callback(message);
+            // Fetch full message with user details to ensure sender/receiver info is available
+            const { data: enrichedMessage, error } = await supabase
+              .from('chat_messages')
+              .select(
+                `
+                *,
+                sender:users!sender_id(id, full_name, profile_image_url),
+                receiver:users!receiver_id(id, full_name, profile_image_url)
+              `
+              )
+              .eq('id', newMessage.id)
+              .single();
+
+            if (error) {
+              console.error('[Chat] Error enriching message:', error);
+              // Fallback to raw message
+              callback(newMessage);
+            } else {
+              console.log('[Chat] Message enriched and calling callback:', enrichedMessage);
+              callback(enrichedMessage as ChatMessage);
+            }
           }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Chat] Subscription ACTIVE for listing:', listingId);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[Chat] Subscription ERROR:', err);
+        } else if (status === 'CLOSED') {
+          console.log('[Chat] Subscription CLOSED');
+        } else {
+          console.log('[Chat] Subscription status:', status);
+        }
+      });
 
     return channel;
   },
