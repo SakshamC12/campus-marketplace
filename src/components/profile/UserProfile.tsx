@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useUserListings } from '../../hooks/useListings';
 import { useAlert } from '../../contexts/AlertContext';
 import '../styles/profile.css';
 
 export const UserProfile: React.FC = () => {
+  const navigate = useNavigate();
   const { user, userProfile, updateProfile, logout } = useAuthContext();
   const { listings } = useUserListings(user?.id || '');
   const { addAlert } = useAlert();
@@ -154,8 +156,32 @@ export const UserProfile: React.FC = () => {
         {listings.length === 0 ? (
           <p>You haven't created any listings yet.</p>
         ) : (
-          <div className="listings-summary">
-            <p>You have {listings.length} active listing(s)</p>
+          <div
+            className="listings-summary"
+            onClick={() => navigate('/my-listings')}
+            style={{
+              cursor: 'pointer',
+              padding: '20px',
+              backgroundColor: '#f0f4ff',
+              borderRadius: '8px',
+              border: '2px solid #667eea',
+              transition: 'all 0.3s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#e3ebff';
+              e.currentTarget.style.transform = 'scale(1.02)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#f0f4ff';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#667eea' }}>
+              You have {listings.length} active listing(s) →
+            </p>
+            <p style={{ margin: '8px 0 0 0', fontSize: '14px', color: '#666' }}>
+              Click to view and manage all your listings
+            </p>
           </div>
         )}
       </div>

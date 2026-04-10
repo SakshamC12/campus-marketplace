@@ -9,6 +9,7 @@ import { HomePage } from './pages/HomePage';
 import { ListingDetailPage } from './pages/ListingDetailPage';
 import { CreateListingPage } from './pages/CreateListingPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { MyListingsPage } from './pages/MyListingsPage';
 import { ChatPage } from './pages/ChatPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { AlertContainer } from './components/notifications/AlertContainer';
@@ -110,6 +111,14 @@ const AppContent: React.FC = () => {
             element={
               <ProtectedRoute>
                 <CreateListingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-listings"
+            element={
+              <ProtectedRoute>
+                <MyListingsPage />
               </ProtectedRoute>
             }
           />
