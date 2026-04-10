@@ -233,4 +233,44 @@ export const listingService = {
   getCampusLocations() {
     return Object.keys(RENDEZVOUS_LOCATIONS);
   },
+
+  // Mark listing as sold (only works if user owns the listing)
+  async markAsSold(listingId: string): Promise<Listing> {
+    const { data, error } = await supabase
+      .from('listings')
+      .update({ status: 'sold' })
+      .eq('id', listingId)
+      .select(`
+        *,
+        user:users(id, full_name, profile_image_url, email)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error marking listing as sold:', error);
+      throw error;
+    }
+
+    return data;
+  },
+
+  // Mark listing as available (only works if user owns the listing)
+  async markAsAvailable(listingId: string): Promise<Listing> {
+    const { data, error } = await supabase
+      .from('listings')
+      .update({ status: 'available' })
+      .eq('id', listingId)
+      .select(`
+        *,
+        user:users(id, full_name, profile_image_url, email)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error marking listing as available:', error);
+      throw error;
+    }
+
+    return data;
+  },
 };
