@@ -7,6 +7,7 @@ export interface User {
   bio?: string;
   phone?: string;
   campus_location?: string;
+  role?: 'user' | 'admin';
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +58,22 @@ export interface ChatMessage {
   created_at: string;
   sender?: User;
   receiver?: User;
+}
+
+// Deal Offer types
+export interface DealOffer {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  listing_id: string;
+  offered_price: number;
+  message?: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  created_at: string;
+  updated_at: string;
+  sender?: User;
+  receiver?: User;
+  listing?: Listing;
 }
 
 // Notification types

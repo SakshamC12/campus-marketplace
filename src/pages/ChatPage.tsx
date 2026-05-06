@@ -2,7 +2,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuthContext } from '../contexts/AuthContext.tsx';
 import { chatService } from '../services/chat.ts';
-import type { ChatMessage } from '../types/index.ts';
+import { dealService } from '../services/deals.ts';
+import { listingService } from '../services/listings.ts';
+import { DealOfferCard } from '../components/chat/DealOfferCard.tsx';
+import { OfferDealModal } from '../components/chat/OfferDealModal.tsx';
+import { useAlert } from '../contexts/AlertContext.tsx';
+import type { ChatMessage, DealOffer, Listing } from '../types/index.ts';
 import '../components/styles/chat.css';
 
 interface ListingConversation {
@@ -156,9 +161,15 @@ const ListingMessageChat: React.FC<{
   otherUserId: string;
 }> = ({ listingId, listingTitle, currentUserId, otherUserId }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [deals, setDeals] = useState<DealOffer[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [isDealProcessing, setIsDealProcessing] = useState(false);
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const dealsSubscriptionRef = useRef<any>(null);
+  const { addAlert } = useAlert();
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -168,7 +179,11 @@ const ListingMessageChat: React.FC<{
     try {
       setLoading(true);
       const msgs = await chatService.getMessages(listingId, otherUserId, currentUserId);
+      const dealsData = await dealService.getDealOffers(listingId, currentUserId, otherUserId);
+      const listingData = await listingService.getListing(listingId);
       setMessages(msgs);
+      setDeals(dealsData);
+      setListing(listingData);
     } catch (error) {
       console.error('Failed to load messages:', error);
     } finally {
@@ -184,7 +199,7 @@ const ListingMessageChat: React.FC<{
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
-  }, [messages, scrollToBottom]);
+  }, [messages, deals, scrollToBottom]);
 
   // Subscribe to real-time listing messages
   useEffect(() => {
@@ -212,6 +227,43 @@ const ListingMessageChat: React.FC<{
     };
   }, [listingId, currentUserId, otherUserId]);
 
+  // Subscribe to deal offers
+  useEffect(() => {
+    if (dealsSubscriptionRef.current) {
+      dealsSubscriptionRef.current.unsubscribe().catch((err: any) => {
+        console.warn('Error unsubscribing from deals:', err);
+      });
+    }
+
+    const dealsChannel = dealService.subscribeToDeals(
+      listingId,
+      currentUserId,
+      otherUserId,
+      (deal) => {
+        console.log('Received deal from subscription:', deal);
+        setDeals((prev) => {
+          const existingIndex = prev.findIndex((d) => d.id === deal.id);
+          if (existingIndex >= 0) {
+            const updated = [...prev];
+            updated[existingIndex] = deal;
+            return updated;
+          }
+          return [...prev, deal];
+        });
+      }
+    );
+
+    dealsSubscriptionRef.current = dealsChannel;
+
+    return () => {
+      if (dealsSubscriptionRef.current) {
+        dealsSubscriptionRef.current.unsubscribe().catch((err: any) => {
+          console.warn('Error during deals subscription cleanup:', err);
+        });
+      }
+    };
+  }, [listingId, currentUserId, otherUserId]);
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -230,6 +282,62 @@ const ListingMessageChat: React.FC<{
       setNewMessage('');
     } catch (error) {
       console.error('Failed to send message:', error);
+    }
+  };
+
+  const handleCreateDealOffer = async (offeredPrice: number, message: string) => {
+    try {
+      setIsDealProcessing(true);
+      const deal = await dealService.createDealOffer(
+        listingId,
+        currentUserId,
+        otherUserId,
+        offeredPrice,
+        message
+      );
+      setDeals((prev) => [...prev, deal]);
+      addAlert('Deal offer sent!', 'success');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to create offer';
+      console.error('Error creating offer:', error);
+      addAlert(msg, 'error');
+      throw error;
+    } finally {
+      setIsDealProcessing(false);
+    }
+  };
+
+  const handleAcceptDeal = async (dealId: string) => {
+    try {
+      setIsDealProcessing(true);
+      const updatedDeal = await dealService.acceptDealOffer(dealId, currentUserId);
+      setDeals((prev) =>
+        prev.map((d) => (d.id === dealId ? updatedDeal : d))
+      );
+      addAlert('Deal accepted! ✓', 'success');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to accept deal';
+      console.error('Error accepting deal:', error);
+      addAlert(msg, 'error');
+    } finally {
+      setIsDealProcessing(false);
+    }
+  };
+
+  const handleRejectDeal = async (dealId: string) => {
+    try {
+      setIsDealProcessing(true);
+      const updatedDeal = await dealService.rejectDealOffer(dealId, currentUserId);
+      setDeals((prev) =>
+        prev.map((d) => (d.id === dealId ? updatedDeal : d))
+      );
+      addAlert('Deal rejected', 'info');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to reject deal';
+      console.error('Error rejecting deal:', error);
+      addAlert(msg, 'error');
+    } finally {
+      setIsDealProcessing(false);
     }
   };
 
@@ -263,37 +371,69 @@ const ListingMessageChat: React.FC<{
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#999' }}>
             Loading messages...
           </div>
-        ) : messages.length === 0 ? (
+        ) : (messages.length === 0 && deals.length === 0) ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#999' }}>
             No messages yet
           </div>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              style={{
-                display: 'flex',
-                justifyContent: msg.sender_id === currentUserId ? 'flex-end' : 'flex-start',
-                marginBottom: '4px',
-              }}
-            >
-              <div
-                style={{
-                  maxWidth: '70%',
-                  padding: '10px 14px',
-                  background: msg.sender_id === currentUserId ? '#007bff' : '#e9ecef',
-                  color: msg.sender_id === currentUserId ? 'white' : 'black',
-                  borderRadius: '12px',
-                  wordWrap: 'break-word',
-                }}
-              >
-                <p style={{ margin: '0 0 4px 0', fontSize: '14px' }}>{msg.message_text}</p>
-                <small style={{ opacity: 0.7, fontSize: '12px' }}>
-                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </small>
-              </div>
-            </div>
-          ))
+          (() => {
+            const allItems = [
+              ...messages.map((m) => ({ type: 'message' as const, data: m, time: m.created_at })),
+              ...deals.map((d) => ({ type: 'deal' as const, data: d, time: d.created_at })),
+            ].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+
+            return allItems.map((item) => {
+              if (item.type === 'message') {
+                const msg = item.data as ChatMessage;
+                return (
+                  <div
+                    key={msg.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: msg.sender_id === currentUserId ? 'flex-end' : 'flex-start',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        maxWidth: '70%',
+                        padding: '10px 14px',
+                        background: msg.sender_id === currentUserId ? '#007bff' : '#e9ecef',
+                        color: msg.sender_id === currentUserId ? 'white' : 'black',
+                        borderRadius: '12px',
+                        wordWrap: 'break-word',
+                      }}
+                    >
+                      <p style={{ margin: '0 0 4px 0', fontSize: '14px' }}>{msg.message_text}</p>
+                      <small style={{ opacity: 0.7, fontSize: '12px' }}>
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </small>
+                    </div>
+                  </div>
+                );
+              } else {
+                const deal = item.data as DealOffer;
+                return (
+                  <div
+                    key={deal.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: deal.sender_id === currentUserId ? 'flex-end' : 'flex-start',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    <DealOfferCard
+                      deal={deal}
+                      currentUserId={currentUserId}
+                      onAccept={handleAcceptDeal}
+                      onReject={handleRejectDeal}
+                      isProcessing={isDealProcessing}
+                    />
+                  </div>
+                );
+              }
+            });
+          })()
         )}
         {/* Scroll anchor */}
         <div ref={messagesEndRef} />
@@ -306,7 +446,8 @@ const ListingMessageChat: React.FC<{
         padding: '12px 16px 16px 16px',
         borderTop: '1px solid #eee',
         minHeight: 'auto',
-        flexShrink: 0
+        flexShrink: 0,
+        flexWrap: 'wrap'
       }}>
         <input
           type="text"
@@ -320,7 +461,8 @@ const ListingMessageChat: React.FC<{
             borderRadius: '4px',
             fontSize: '14px',
             fontFamily: 'inherit',
-            outline: 'none'
+            outline: 'none',
+            minWidth: '200px'
           }}
         />
         <button
@@ -339,7 +481,34 @@ const ListingMessageChat: React.FC<{
         >
           Send
         </button>
+        {currentUserId !== listing?.user_id && listing?.price && (
+          <button
+            type="button"
+            onClick={() => setIsOfferModalOpen(true)}
+            style={{
+              padding: '10px 16px',
+              background: '#ff9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              flexShrink: 0,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            💰 Offer Deal
+          </button>
+        )}
       </form>
+
+      <OfferDealModal
+        isOpen={isOfferModalOpen}
+        originalPrice={listing?.price || 0}
+        onSubmit={handleCreateDealOffer}
+        onClose={() => setIsOfferModalOpen(false)}
+      />
     </div>
   );
 };

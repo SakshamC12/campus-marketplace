@@ -12,6 +12,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { MyListingsPage } from './pages/MyListingsPage';
 import { ChatPage } from './pages/ChatPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { AdminDashboard } from './pages/AdminDashboard';
 import { AlertContainer } from './components/notifications/AlertContainer';
 import { NotificationBadge } from './components/notifications/NotificationUI';
 import { useNotifications } from './hooks/useNotifications';
@@ -21,8 +22,9 @@ import './components/styles/auth.css';
 import './components/styles/notifications.css';
 
 const AppContent: React.FC = () => {
-  const { user, logout } = useAuthContext();
+  const { user, userProfile, logout } = useAuthContext();
   const { unreadCount } = useNotifications(user?.id || null);
+  const isAdmin = userProfile?.role === 'admin';
 
   return (
     <div className="app-container">
@@ -54,6 +56,13 @@ const AppContent: React.FC = () => {
                 <li>
                   <Link to="/chat">Messages</Link>
                 </li>
+                {isAdmin && (
+                  <li>
+                    <Link to="/admin" style={{ color: '#ff9800', fontWeight: 'bold' }}>
+                      🔧 Admin
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <Link to="/profile">Profile</Link>
                 </li>
@@ -143,6 +152,14 @@ const AppContent: React.FC = () => {
             element={
               <ProtectedRoute>
                 <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
               </ProtectedRoute>
             }
           />

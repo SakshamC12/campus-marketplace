@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { s3Service } from './s3';
 import type { Listing, ListingFilters, ListingImage } from '../types';
 
 export const RENDEZVOUS_LOCATIONS = {
@@ -145,22 +146,10 @@ export const listingService = {
     }
   },
 
-  // Upload listing image
+  // Upload listing image to AWS S3
   async uploadListingImage(listingId: string, file: File) {
-    const fileName = `${listingId}/${Date.now()}_${file.name}`;
-
-    const { error } = await supabase.storage
-      .from('listing-images')
-      .upload(fileName, file);
-
-    if (error) {
-      throw error;
-    }
-
-    // Get public URL
-    const { data: publicData } = supabase.storage
-      .from('listing-images')
-      .getPublicUrl(fileName);
+    // Upload to S3
+    const imageUrl = await s3Service.uploadFile(file, `listings/${listingId}`);
 
     // Save to listing_images table
     const { error: dbError } = await supabase
@@ -168,7 +157,7 @@ export const listingService = {
       .insert([
         {
           listing_id: listingId,
-          image_url: publicData.publicUrl,
+          image_url: imageUrl,
         },
       ]);
 
@@ -176,7 +165,7 @@ export const listingService = {
       throw dbError;
     }
 
-    return publicData.publicUrl;
+    return imageUrl;
   },
 
   // Get listing images
@@ -196,16 +185,8 @@ export const listingService = {
   },
 
   // Delete listing image
-  async deleteListingImage(imageId: string, imageUrl: string) {
-    // Delete from storage
-    const filePath = imageUrl.split('/').pop();
-    if (filePath) {
-      await supabase.storage
-        .from('listing-images')
-        .remove([filePath]);
-    }
-
-    // Delete from database
+  async deleteListingImage(imageId: string, _imageUrl: string) {
+    // Delete from database only (S3 objects can be archived/cleaned separately)
     const { error } = await supabase
       .from('listing_images')
       .delete()
